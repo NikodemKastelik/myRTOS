@@ -7,6 +7,7 @@
 
 #include "myrtos.h"
 #include "myrt_config.h"
+#include "myrtos_port.h"
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
@@ -121,39 +122,47 @@ static inline __attribute__((always_inline)) void myrtSwitchContext(myrtTask * n
 		);	
 }
 
-/*
-static inline __attribute__((always_inline)) void myrtUpdateTaskStatus(myrtTask * taskToUpdate)
-{
-	switch(taskToUpdate->thisTaskStatus)
-	{
-		case SLEEPING:
-		{
-			
-			break;
-		}
-		
-		case MUTEX:
-		{
-			break;
-		}
-		
-		case SEMAPHORE:
-		{
-			break;
-		}
-	}
-}*/
-
-void myrtSchedule()
+static inline __attribute__((always_inline)) void myrtUpdateTasksStatus()
 {
 	for(uint8_t taskIndex = 0; taskIndex < TASKS_COUNT_WITH_IDLE ; taskIndex++)
 	{
-		if(allTasks[taskIndex].thisTaskStatus == SLEEPING && allTasks[taskIndex].blockSource.timeWhenUnblocked == systemTime )
+		myrtTask * taskToUpdate = &allTasks[taskIndex];
+		//&allTasks[taskIndex] taskToUpdate->
+		switch(taskToUpdate->thisTaskStatus)
 		{
-			allTasks[taskIndex].thisTaskStatus = READY;
+			case SLEEPING:
+			{
+				if(taskToUpdate->blockSource.timeWhenUnblocked == systemTime)
+				{
+					taskToUpdate->thisTaskStatus = READY;
+				}
+				break;
+			}
+			
+			case MUTEX:
+			{
+				if(*(taskToUpdate->blockSource.mutex) == RELEASED)
+				{
+					taskToUpdate->thisTaskStatus = READY;
+				}
+				break;
+			}
+			
+			case READY:
+			{
+				break;
+			}
 		}
 	}
-	
+}
+
+
+// * @note 
+// * Os optimization in order to prevent compiler for using stack here. Stack cannot be messed from this point to
+// * context switch because otherwise return address will be wrong.
+void  __attribute__((optimize("Os"))) myrtSchedule()
+{
+	myrtUpdateTasksStatus();
 	myrtTask * thisTask = &allTasks[FIRST_TASK];
 	while( thisTask->thisTaskStatus != READY)
 	{
@@ -232,8 +241,7 @@ void myrtSleep(uint16_t timeInMs)
 
 void myrtStart(void (*idleTaskFunction)(void))
 {
-	TIMSK = (1<<TOIE0);
-	TCCR0 = (1<<CS00); //| (1<<CS00); // 256 prescaler
+	INIT_SYSTICK_TIMER();
 	currentTask = &allTasks[IDLE_TASK];
 	sei();
 	(*idleTaskFunction)();
