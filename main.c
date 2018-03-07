@@ -13,28 +13,32 @@
 #include <avr/interrupt.h>
 #include "myrtos.h"
 
-mutex_t ledLock;
-
+myQueue msgQueue;
 
 void Task1()
 {
+	char arr[5];
 	while(1)
 	{
-		lockMutex(&ledLock);
-		myrtSleep(10);
-		releaseMutex(&ledLock);
-		myrtSleep(5);
+		if(queueGet(&msgQueue, arr))
+		{
+			PORTB ^= 0xFF;
+			myrtSleep(10);
+			PORTB ^= 0xFF;
+		}
+		else
+		{
+			myrtSchedule();
+		}
 	}
 }
 
 void Task2()
 {
+	char arr[] = "abc";
 	while(1)
 	{
-		lockMutex(&ledLock);
-		myrtSleep(12);
-		releaseMutex(&ledLock);
-		myrtSleep(1);
+	
 	}
 }
 
@@ -52,10 +56,10 @@ int main(void)
 	DDRB = 0xFF;
 	DDRD = 0xFF;
 	
-	ledLock = createMutex();
+	queueInit(&msgQueue);
 	
-	myrtCreateTask(Task1, 10);
-	myrtCreateTask(Task2, 10);
+	myrtCreateTask(Task1, 20);
+	myrtCreateTask(Task2, 20);
 	
 	myrtStart(idleTask);
 	while(1);

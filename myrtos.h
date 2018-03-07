@@ -11,9 +11,10 @@
 #include <inttypes.h>
 #include "mybool.h"
 
-typedef uint16_t myrtSysTimeMs_t;
+#define FIFO_SIZE	128
 
-typedef enum {READY, SLEEPING, MUTEX} myrtTaskStatus_t;
+typedef uint16_t myrtSysTimeMs_t;
+typedef enum {READY, SLEEPING, MUTEX, QUEUE} myrtTaskStatus_t;
 	
 //#define LOCKED 0
 //#define RELEASED 1
@@ -34,6 +35,14 @@ typedef struct
 }
 myrtTask;
 
+typedef struct
+{
+	char fifo[FIFO_SIZE];
+	uint16_t writeIndex;
+	uint16_t readIndex;
+	mutex_t readWriteMutex;
+} myQueue;
+
 extern myrtTask * currentTask;
 
 void myrtSchedule();
@@ -46,5 +55,10 @@ mutex_t createMutex();
 void lockMutex(mutex_t * mutexToLock);
 mybool trylockMutex(mutex_t * mutexToLock);
 void releaseMutex(mutex_t * mutexToUnlock);
+
+void queuePut(myQueue * Queue, const char * arr);
+mybool queueGet(myQueue * Queue, char * arr);
+void queueInit(myQueue * Queue);
+mybool queueDoesContainItem(myQueue * Queue);
 
 #endif /* MYRTOS_H_ */

@@ -148,6 +148,16 @@ static inline __attribute__((always_inline)) void myrtUpdateTasksStatus()
 				break;
 			}
 			
+			/*
+			case QUEUE:
+			{
+				if(*(taskToUpdate->blockSource.mutex) == RELEASED)
+				{
+					taskToUpdate->thisTaskStatus = READY;
+				}
+				break;
+			}*/
+			
 			case READY:
 			{
 				break;
