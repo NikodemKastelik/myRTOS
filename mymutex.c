@@ -42,24 +42,6 @@ mybool lockMutex(mutex_t * mutexToLock, mybool isBlocking)
 	return isSuceeded;
 }
 
-/*
-mybool trylockMutex(mutex_t * mutexToLock)
-{
-	DISABLE_INTERRUPTS();
-	mybool isSuceeded;
-	if(*mutexToLock == RELEASED)
-	{
-		*mutexToLock = LOCKED;
-		isSuceeded = TRUE; 
-	}
-	else
-	{
-		isSuceeded = FALSE;
-	}
-	ENABLE_INTERRUPTS();
-	return isSuceeded;
-}*/
-
 void releaseMutex(mutex_t * mutexToUnlock)
 {
 	*mutexToUnlock = RELEASED;

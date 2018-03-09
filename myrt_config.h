@@ -9,7 +9,7 @@
 #ifndef MYRT_CONFIG_H_
 #define MYRT_CONFIG_H_
 
-#define TASKS_COUNT 3
+#define TASKS_COUNT 2
 #define TASKS_COUNT_WITH_IDLE (TASKS_COUNT+1)
 
 #define SYSTICK_TIMER_ISR TIMER0_OVF_vect

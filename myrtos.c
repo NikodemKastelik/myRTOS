@@ -159,37 +159,12 @@ static inline __attribute__((always_inline)) myrtTask * myrtChooseNextTask()
 	return nextTaskToExecute;
 }
 
-/*
-static inline __attribute__((always_inline)) void myrtUpdateBlockedTasks()
-{
-	for(uint8_t taskIndex = 0; taskIndex < TASKS_COUNT_WITH_IDLE ; taskIndex++)
-	{
-		myrtTask * taskToUpdate = &allTasks[taskIndex];
-		if(taskToUpdate->thisTaskStatus == MUTEX)
-		{
-			if(*(taskToUpdate->blockSource.mutex) == RELEASED)
-			{
-				taskToUpdate->thisTaskStatus = READY;
-			}
-		}
-	}
-}*/
-
-
 // * @note 
 // * Os optimization in order to prevent compiler for using stack here. Stack cannot be messed from this point to
 // * context switch because otherwise return address will be wrong.
 void  __attribute__((optimize("Os"))) myrtSchedule()
 {
-	/*
-	myrtTask * nextTaskToExecute = &allTasks[FIRST_TASK];
-	while( nextTaskToExecute->thisTaskStatus != READY)
-	{
-		nextTaskToExecute++;
-	}*/
-	myrtTask * nextTaskToExecute = myrtChooseNextTask();
-	
-	//myrtUpdateChosenTask(nextTaskToExecute);	
+	myrtTask * nextTaskToExecute = myrtChooseNextTask();	
 	if(nextTaskToExecute != currentTask)
 	{
 		myrtSwitchContext(nextTaskToExecute);
@@ -218,24 +193,6 @@ void myrtCreateTask(void * taskFunction, uint8_t thisTaskStackSize)
 	currentTaskIndex++;
 }
 
-/*
-void myrtDebugSwitchTasksStates()
-{
-	myrtTask * thisTask;
-	for(uint8_t taskIndex=0 ;  taskIndex < TASKS_COUNT_WITH_IDLE ; taskIndex++)
-	{
-		thisTask = &allTasks[taskIndex];
-		if(thisTask == currentTask)
-		{
-			thisTask->thisTaskStatus = BLOCKED;
-		}
-		else
-		{
-			thisTask->thisTaskStatus = READY;
-		}
-	}
-}*/
-
 static inline __attribute__((always_inline)) void myrtSysTick()
 {
 	systemTime++;
@@ -243,9 +200,8 @@ static inline __attribute__((always_inline)) void myrtSysTick()
 
 void __attribute__ ((naked)) SYSTICK_TIMER_ISR(void)
 {
-	cli();
+	DISABLE_INTERRUPTS;
 	myrtSysTick();
-	//myrtDebugSwitchTasksStates();
 	myrtWakeupSleepingTasks();
 	myrtSchedule();
 	reti();
@@ -253,17 +209,17 @@ void __attribute__ ((naked)) SYSTICK_TIMER_ISR(void)
 
 void myrtSleep(uint16_t timeInMs)
 {
-	cli();
+	DISABLE_INTERRUPTS;
 	currentTask->thisTaskStatus = SLEEPING;
 	currentTask->blockSource.timeWhenUnblocked = systemTime + timeInMs;
 	myrtSchedule();
-	sei();
+	ENABLE_INTERRUPTS();
 }
 
 void myrtStart(void (*idleTaskFunction)(void))
 {
 	INIT_SYSTICK_TIMER();
 	currentTask = &allTasks[IDLE_TASK];
-	sei();
+	ENABLE_INTERRUPTS();
 	(*idleTaskFunction)();
 }

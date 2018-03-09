@@ -14,16 +14,13 @@
 #include "myrtos.h"
 
 //myQueue msgQueue;
-mutex_t ledMutex;
+//mutex_t ledMutex;
 
 void Task1()
 {
 	while(1)
 	{
-		lockMutex(&ledMutex, TRUE);
-		myrtSleep(16);
-		releaseMutex(&ledMutex);
-		myrtSleep(1);
+
 	}
 }
 
@@ -31,21 +28,7 @@ void Task2()
 {
 	while(1)
 	{
-		lockMutex(&ledMutex, TRUE);
-		myrtSleep(11);
-		releaseMutex(&ledMutex);
-		myrtSleep(3);
-	}
-}
 
-void Task3()
-{
-	while(1)
-	{
-		lockMutex(&ledMutex, TRUE);
-		myrtSleep(1);
-		releaseMutex(&ledMutex);
-		myrtSleep(1);
 	}
 }
 
@@ -53,7 +36,7 @@ void idleTask()
 {
 	while(1)
 	{
-		PORTD ^= 0xFF;
+
 	}
 }
 
@@ -64,11 +47,10 @@ int main(void)
 	DDRD = 0xFF;
 	
 	//queueInit(&msgQueue);
-	ledMutex = createMutex();
+	//ledMutex = createMutex();
 	
 	myrtCreateTask(Task1, 10);
 	myrtCreateTask(Task2, 10);
-	myrtCreateTask(Task3, 10);
 	
 	myrtStart(idleTask);
 	while(1);
