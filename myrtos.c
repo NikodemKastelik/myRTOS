@@ -122,49 +122,58 @@ static inline __attribute__((always_inline)) void myrtSwitchContext(myrtTask * n
 		);	
 }
 
-static inline __attribute__((always_inline)) void myrtUpdateTasksStatus()
+static inline __attribute__((always_inline)) void myrtWakeupSleepingTasks()
 {
 	for(uint8_t taskIndex = 0; taskIndex < TASKS_COUNT_WITH_IDLE ; taskIndex++)
 	{
 		myrtTask * taskToUpdate = &allTasks[taskIndex];
-		//&allTasks[taskIndex] taskToUpdate->
-		switch(taskToUpdate->thisTaskStatus)
+		if(taskToUpdate->thisTaskStatus == SLEEPING)
 		{
-			case SLEEPING:
+			if(taskToUpdate->blockSource.timeWhenUnblocked == systemTime)
 			{
-				if(taskToUpdate->blockSource.timeWhenUnblocked == systemTime)
-				{
-					taskToUpdate->thisTaskStatus = READY;
-				}
-				break;
-			}
-			
-			case MUTEX:
-			{
-				if(*(taskToUpdate->blockSource.mutex) == RELEASED)
-				{
-					taskToUpdate->thisTaskStatus = READY;
-				}
-				break;
-			}
-			
-			/*
-			case QUEUE:
-			{
-				if(*(taskToUpdate->blockSource.mutex) == RELEASED)
-				{
-					taskToUpdate->thisTaskStatus = READY;
-				}
-				break;
-			}*/
-			
-			case READY:
-			{
-				break;
+				taskToUpdate->thisTaskStatus = READY;
 			}
 		}
 	}
 }
+
+static inline __attribute__((always_inline)) myrtTask * myrtChooseNextTask()
+{
+	myrtTask * nextTaskToExecute;
+	for(uint8_t taskIndex = 0; taskIndex < TASKS_COUNT_WITH_IDLE ; taskIndex++)
+	{
+		nextTaskToExecute = &allTasks[taskIndex];
+		if(nextTaskToExecute->thisTaskStatus == READY)
+		{
+			break;
+		}
+		else if(nextTaskToExecute->thisTaskStatus == MUTEX)
+		{
+			if(*(nextTaskToExecute->blockSource.mutex) == RELEASED)
+			{
+				nextTaskToExecute->thisTaskStatus = READY;
+				break;
+			}
+		}
+	}
+	return nextTaskToExecute;
+}
+
+/*
+static inline __attribute__((always_inline)) void myrtUpdateBlockedTasks()
+{
+	for(uint8_t taskIndex = 0; taskIndex < TASKS_COUNT_WITH_IDLE ; taskIndex++)
+	{
+		myrtTask * taskToUpdate = &allTasks[taskIndex];
+		if(taskToUpdate->thisTaskStatus == MUTEX)
+		{
+			if(*(taskToUpdate->blockSource.mutex) == RELEASED)
+			{
+				taskToUpdate->thisTaskStatus = READY;
+			}
+		}
+	}
+}*/
 
 
 // * @note 
@@ -172,17 +181,18 @@ static inline __attribute__((always_inline)) void myrtUpdateTasksStatus()
 // * context switch because otherwise return address will be wrong.
 void  __attribute__((optimize("Os"))) myrtSchedule()
 {
-	myrtUpdateTasksStatus();
-	myrtTask * thisTask = &allTasks[FIRST_TASK];
-	while( thisTask->thisTaskStatus != READY)
+	/*
+	myrtTask * nextTaskToExecute = &allTasks[FIRST_TASK];
+	while( nextTaskToExecute->thisTaskStatus != READY)
 	{
-		
-		thisTask++;
-	}
+		nextTaskToExecute++;
+	}*/
+	myrtTask * nextTaskToExecute = myrtChooseNextTask();
 	
-	if(thisTask != currentTask)
+	//myrtUpdateChosenTask(nextTaskToExecute);	
+	if(nextTaskToExecute != currentTask)
 	{
-		myrtSwitchContext(thisTask);
+		myrtSwitchContext(nextTaskToExecute);
 	}
 }
 
@@ -236,6 +246,7 @@ void __attribute__ ((naked)) SYSTICK_TIMER_ISR(void)
 	cli();
 	myrtSysTick();
 	//myrtDebugSwitchTasksStates();
+	myrtWakeupSleepingTasks();
 	myrtSchedule();
 	reti();
 }

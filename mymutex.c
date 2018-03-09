@@ -14,24 +14,35 @@ mutex_t createMutex()
 	return mutex;
 }
 
-void lockMutex(mutex_t * mutexToLock)
+mybool lockMutex(mutex_t * mutexToLock, mybool isBlocking)
 {
 	DISABLE_INTERRUPTS();
+	mybool isSuceeded;
 	if(*mutexToLock == RELEASED)
 	{
 		*mutexToLock = LOCKED;
+		isSuceeded = TRUE;
 	}
 	else
 	{
-		currentTask->thisTaskStatus = MUTEX;
-		currentTask->blockSource.mutex = mutexToLock;
-		myrtSchedule();
-		// * lock mutex when it is available
-		*mutexToLock = LOCKED; 
+		if(isBlocking)
+		{
+			currentTask->thisTaskStatus = MUTEX;
+			currentTask->blockSource.mutex = mutexToLock;
+			myrtSchedule();
+			*mutexToLock = LOCKED;
+			isSuceeded = TRUE;
+		}
+		else
+		{
+			isSuceeded = FALSE;
+		}
 	}
 	ENABLE_INTERRUPTS();
+	return isSuceeded;
 }
 
+/*
 mybool trylockMutex(mutex_t * mutexToLock)
 {
 	DISABLE_INTERRUPTS();
@@ -47,7 +58,7 @@ mybool trylockMutex(mutex_t * mutexToLock)
 	}
 	ENABLE_INTERRUPTS();
 	return isSuceeded;
-}
+}*/
 
 void releaseMutex(mutex_t * mutexToUnlock)
 {

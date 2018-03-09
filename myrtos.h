@@ -52,8 +52,8 @@ void myrtStart(void (*idleTaskFunction)(void));
 void myrtDebugSwitchTasksStates();
 
 mutex_t createMutex();
-void lockMutex(mutex_t * mutexToLock);
-mybool trylockMutex(mutex_t * mutexToLock);
+mybool lockMutex(mutex_t * mutexToLock, mybool isBlocking);
+//mybool trylockMutex(mutex_t * mutexToLock);
 void releaseMutex(mutex_t * mutexToUnlock);
 
 void queuePut(myQueue * Queue, const char * arr);

@@ -16,7 +16,7 @@
       */
 void queuePut(myQueue * Queue, const char * arr)
 {
-	lockMutex(&(Queue->readWriteMutex));
+	lockMutex(&(Queue->readWriteMutex), TRUE);
 	char c;
 	uint16_t i=0;
 	while(WAIT_FOR_NULL)
@@ -39,7 +39,7 @@ void queuePut(myQueue * Queue, const char * arr)
       */
 mybool queueGet(myQueue * Queue, char * arr)
 {
-	lockMutex(&(Queue->readWriteMutex));
+	lockMutex(&(Queue->readWriteMutex), TRUE);
 	mybool status;
 	if(queueDoesContainItem(Queue))
 	{
